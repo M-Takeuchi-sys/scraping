@@ -37,9 +37,9 @@ def main():
 
     no = 1
     file_name = '{}_{}.csv'.format(store_id, date)
-    f = open(file_name, 'w')
+    f = open(file_name, 'w', encoding='UTF-8')
     writer = csv.writer(f, lineterminator='\n')
-    writer.writerow(['no', '商品名', '価格', 'JANコード'])
+    writer.writerow(['No', 'JANコード', '商品名', '価格', 'URL'])
 
     options = Options()
     options.add_argument(USER_CHROME_PATH)
@@ -53,13 +53,29 @@ def main():
             for item in soup.find_all('div', class_='searchresultitem'):
                 title = item.find('h2').text.strip()
                 price = int(re.sub('[^0-9]', '', item.find('span', class_='important').text))
-                jan_code_container = item.find('div', class_='qs-jan')
-                if jan_code_container.contents[3].text.isdecimal():
-                    jan_code = int(jan_code_container.contents[3].text)
-                else:
-                    jan_code = jan_code_container.contents[3].text
+                item_url = item.find('a').get('href')
 
-                writer.writerow([no, title, price, jan_code])
+                jan_code = None
+                jan_code_container = item.find('div', class_='qs-jan')
+                if jan_code_container:
+                    if jan_code_container.contents[3].text.isdecimal():
+                        jan_code = int(jan_code_container.contents[3].text)
+
+                if not jan_code:
+                    driver.get(item_url)
+                    time.sleep(5)
+                    item_soup = BeautifulSoup(driver.page_source.encode('utf-8'), 'html.parser')
+
+                    jan_code_container = item_soup.find('div', class_='qs-jan')
+                    if jan_code_container:
+                        if jan_code_container.contents[3].text.isdecimal():
+                            jan_code = int(jan_code_container.contents[3].text)
+                        else:
+                            jan_code = jan_code_container.contents[3].text
+                    else:
+                        jan_code = 'NO DATA'
+
+                writer.writerow([no, jan_code, title, price, item_url])
 
                 no = no + 1
 
@@ -68,15 +84,13 @@ def main():
                 driver.get(url)
                 time.sleep(10)
             else:
+                print('正常に終了しました')
                 break
     except Exception as e:
-        f.close()
-        driver.quit()
         print('エラーが発生しました')
 
     f.close()
     driver.quit()
-    print('正常に終了しました')
 
 
 if __name__ == '__main__':
