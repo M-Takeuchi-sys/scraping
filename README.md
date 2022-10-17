@@ -24,3 +24,8 @@ deactivate
 ```shell
 python3 <ファイル名>
 ```
+
+スクリーンショット
+```python
+# driver.save_screenshot('screaping.png')
+```
