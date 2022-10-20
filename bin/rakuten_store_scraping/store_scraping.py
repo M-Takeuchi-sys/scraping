@@ -11,7 +11,7 @@ from selenium.webdriver.chrome.options import Options
 import chromedriver_binary
 
 date = datetime.datetime.now().strftime('%Y%m%d')
-EXTENSION_PATH = 'quick_shop1.9.4.0.crx'
+EXTENSION_PATH = 'rakujan1.12.1.0.crx'
 # usernameの部分をパソコン環境ごとに変更する
 USER_CHROME_PATH = '--user-data-dir=/Users/username/Library/Application\ Support/Google/Chrome/Default/'
 
@@ -45,6 +45,7 @@ def main():
     options.add_argument(USER_CHROME_PATH)
     options.add_extension(EXTENSION_PATH)
     driver = webdriver.Chrome(options=options)
+    driver.delete_all_cookies()
     driver.get(url)
     time.sleep(10)
     try:
@@ -56,22 +57,22 @@ def main():
                 item_url = item.find('a').get('href')
 
                 jan_code = None
-                jan_code_container = item.find('div', class_='qs-jan')
+                jan_code_container = item.find('div', id='rakujan-wrapper')
                 if jan_code_container:
-                    if jan_code_container.contents[3].text.isdecimal():
-                        jan_code = int(jan_code_container.contents[3].text)
+                    if jan_code_container.attrs['data-rakujan-jan'].isdecimal():
+                        jan_code = int(jan_code_container.attrs['data-rakujan-jan'])
 
                 if not jan_code:
                     driver.get(item_url)
                     time.sleep(5)
                     item_soup = BeautifulSoup(driver.page_source.encode('utf-8'), 'html.parser')
 
-                    jan_code_container = item_soup.find('div', class_='qs-jan')
+                    jan_code_container = item_soup.find('div', id='rakujan-wrapper')
                     if jan_code_container:
-                        if jan_code_container.contents[3].text.isdecimal():
-                            jan_code = int(jan_code_container.contents[3].text)
+                        if jan_code_container.attrs['data-rakujan-jan'].isdecimal():
+                            jan_code = int(jan_code_container.attrs['data-rakujan-jan'])
                         else:
-                            jan_code = jan_code_container.contents[3].text
+                            jan_code = jan_code_container.attrs['data-rakujan-jan']
                     else:
                         jan_code = 'NO DATA'
 
@@ -81,6 +82,7 @@ def main():
 
             if hasattr(soup.find('a', class_='item -next nextPage'), 'text'):
                 url = soup.find('a', class_='item -next nextPage').get('href')
+                driver.delete_all_cookies()
                 driver.get(url)
                 time.sleep(10)
             else:
